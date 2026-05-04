@@ -1,6 +1,53 @@
+// const jwt = require("jsonwebtoken");
+// const User = require("../models/User");
+
+// const protect = async (req, res, next) => {
+//   let token;
+
+//   if (
+//     req.headers.authorization &&
+//     req.headers.authorization.startsWith("Bearer")
+//   ) {
+//     try {
+//       token = req.headers.authorization.split(" ")[1];
+
+//       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+// console.log("Decoded token:", decoded);
+
+// req.user = await User.findById(decoded.id).select("-password");
+
+// console.log("Fetched user:", req.user);
+
+// next();
+//     } catch (error) {
+//       return res.status(401).json({ message: "Not authorized" });
+//     }
+//   }
+
+//   if (!token) {
+//     return res.status(401).json({ message: "No token provided" });
+//   }
+// };
+// const authorizeRoles = (...roles) => {
+//   return (req, res, next) => {
+//     if (!roles.includes(req.user.role)) {
+//       return res.status(403).json({ message: "Access denied" });
+//     }
+//     next();
+//   };
+// };
+
+// module.exports = { protect, authorizeRoles };
+
+
+
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+// ==========================
+// AUTH PROTECTION
+// ==========================
 const protect = async (req, res, next) => {
   let token;
 
@@ -13,14 +60,15 @@ const protect = async (req, res, next) => {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-console.log("Decoded token:", decoded);
+      req.user = await User.findById(decoded.id).select("-password");
 
-req.user = await User.findById(decoded.id).select("-password");
+      if (!req.user) {
+        return res.status(401).json({ message: "User not found" });
+      }
 
-console.log("Fetched user:", req.user);
-
-next();
+      next();
     } catch (error) {
+      console.error("Auth error:", error.message);
       return res.status(401).json({ message: "Not authorized" });
     }
   }
@@ -29,11 +77,16 @@ next();
     return res.status(401).json({ message: "No token provided" });
   }
 };
+
+// ==========================
+// ROLE AUTHORIZATION
+// ==========================
 const authorizeRoles = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({ message: "Access denied" });
     }
+
     next();
   };
 };

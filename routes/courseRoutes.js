@@ -5,17 +5,39 @@ const {
   createCourse,
   getCourses,
   getCourseById,
+  updateCourse,
+  deleteCourse,
 } = require("../controllers/courseController");
 
-const { protect, authorizeRoles } = require("../middleware/authMiddleware");
+const {
+  protect,
+  authorizeRoles,
+} = require("../middleware/authMiddleware");
 
-// Instructor/Admin can create
-router.post("/", protect, authorizeRoles("instructor", "admin"), createCourse);
-
-// Public can view all
+// Public
 router.get("/", getCourses);
-
-// Public can view one
 router.get("/:id", getCourseById);
+
+// Admin / Instructor only
+router.post(
+  "/",
+  protect,
+  authorizeRoles("admin", "instructor"),
+  createCourse
+);
+
+router.put(
+  "/:id",
+  protect,
+  authorizeRoles("admin", "instructor"),
+  updateCourse
+);
+
+router.delete(
+  "/:id",
+  protect,
+  authorizeRoles("admin", "instructor"),
+  deleteCourse
+);
 
 module.exports = router;
